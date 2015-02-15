@@ -14,6 +14,9 @@
     </div>
 
     <script id="user_list_template" type="text/x-template">
+    <a class="btn btn-primary" href="#/new">New User</a>
+    <hr>
+
     <table class="table striped">
         <thead>
             <tr>
@@ -36,6 +39,30 @@
     </table>
     </script>
 
+    <script id="user_form_template" type="text/x-template">
+    <form class="edit-user-form">
+        <legend>Create User</legend>
+
+        <label>First Name</label>
+        <br>
+        <input type="text" name="firstname" />
+        <br>
+
+        <label>Last Name</label>
+        <br>
+        <input type="text" name="lastname" />
+        <br>
+
+        <label>Age</label>
+        <br>
+        <input type="text" name="age" />
+
+        <hr>
+
+        <button class="btn" type="submit">Create User</button>
+    </form>
+    </script>
+
 <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
 <script src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.2/underscore-min.js"></script>
 <script src="//cdnjs.cloudflare.com/ajax/libs/backbone.js/1.1.2/backbone-min.js"></script>
@@ -43,7 +70,8 @@
 
 var Router = Backbone.Router.extend({
         routes: {
-            '': 'home'
+            '': 'home',
+            'new': 'edit_user'
         }
     }),
     router = new Router(),
@@ -68,17 +96,69 @@ var Router = Backbone.Router.extend({
     }),
     user_list = new UserList(),
 
+    EditUser = Backbone.View.extend({
+        el: '.page',
+        events: {
+            'submit .edit-user-form': 'save_user'
+        },
+        save_user: function(e) {
+            var form_data = $(e.currentTarget).serializeObject();
+                user = new User();
+
+                user.save(form_data, {
+                    success: function() {
+                        router.navigate('', {trigger: true});
+                    }
+                });
+
+            return false;
+        },
+        render: function() {
+            var tmpl = _.template(
+                    $('#user_form_template').html()
+                );
+
+            this.$el.html(tmpl);
+        }
+    }),
+    user_form = new EditUser(),
+
     Users = Backbone.Collection.extend({
         url: '/users'
+    });
+
+    User = Backbone.Model.extend({
+        urlRoot: '/users'
     });
 
     router.on('route:home', function() {
         user_list.render();
     });
 
+    router.on('route:edit_user', function() {
+        user_form.render();
+    });
+
     $.ajaxPrefilter(function(opts, original_opts, xhr) {
         opts.url = 'http://backbonejs-beginner.herokuapp.com' + opts.url;
     });
+
+    $.fn.serializeObject = function() {
+        return this.serializeArray().reduce(function(obj, field) {
+            if(obj.hasOwnProperty(field.name)) {
+                if('function' !== typeof obj[field.name].push) {
+                    obj[field.name] = [obj[field.name]];
+                }
+
+                obj[field.name].push(field.value || '');
+            }
+            else {
+                obj[field.name] = field.value || '';
+            }
+
+            return obj;
+        }, {});
+    };
 
     Backbone.history.start();
 
