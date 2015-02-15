@@ -65,6 +65,7 @@
 
         <% if(user) { %>
         <input name="id" type="hidden" value="<%= user.id %>">
+        <button class="btn btn-danger delete">Delete</button>
         <% } %>
     </form>
     </script>
@@ -106,7 +107,17 @@ var Router = Backbone.Router.extend({
     EditUser = Backbone.View.extend({
         el: '.page',
         events: {
-            'submit .edit-user-form': 'save_user'
+            'submit .edit-user-form': 'save_user',
+            'click .delete': 'delete_user'
+        },
+        delete_user: function(e) {
+            this.user.destroy({
+                success: function() {
+                    router.navigate('', {trigger: true});
+                }
+            });
+
+            return false;
         },
         save_user: function(e) {
             var form_data = $(e.currentTarget).serializeObject();
@@ -121,12 +132,12 @@ var Router = Backbone.Router.extend({
             return false;
         },
         render: function(opts) {
-            var tmpl, user,
+            var tmpl,
                 $el = this.$el;
 
             if(opts.hasOwnProperty('id') && opts.id) {
-                user = new User({id: opts.id});
-                user.fetch({
+                this.user = new User({id: opts.id});
+                this.user.fetch({
                     success: function(user) {
                         tmpl = _.template(
                             $('#user_form_template').html(),
