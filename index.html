@@ -32,7 +32,9 @@
                 <td><%= user.get('firstname') %></td>
                 <td><%= user.get('lastname') %></td>
                 <td><%= user.get('age') %></td>
-                <td></td>
+                <td>
+                    <a class="btn" href="#/edit/<%= user.id %>">Edit</a>
+                </td>
             </tr>
             <% }); %>
         </tbody>
@@ -41,25 +43,29 @@
 
     <script id="user_form_template" type="text/x-template">
     <form class="edit-user-form">
-        <legend>Create User</legend>
+        <legend><%= user ? 'Update' : 'Create' %> User</legend>
 
         <label>First Name</label>
         <br>
-        <input type="text" name="firstname" />
+        <input type="text" name="firstname" value="<%= user ? user.get('firstname') : '' %>" />
         <br>
 
         <label>Last Name</label>
         <br>
-        <input type="text" name="lastname" />
+        <input type="text" name="lastname" value="<%= user ? user.get('lastname') : '' %>" />
         <br>
 
         <label>Age</label>
         <br>
-        <input type="text" name="age" />
+        <input type="text" name="age" value="<%= user ? user.get('age') : '' %>" />
 
         <hr>
 
-        <button class="btn" type="submit">Create User</button>
+        <button class="btn" type="submit"><%= user ? 'Update' : 'Create'%> User</button>
+
+        <% if(user) { %>
+        <input name="id" type="hidden" value="<%= user.id %>">
+        <% } %>
     </form>
     </script>
 
@@ -71,7 +77,8 @@
 var Router = Backbone.Router.extend({
         routes: {
             '': 'home',
-            'new': 'edit_user'
+            'new': 'edit_user',
+            'edit/:id': 'edit_user'
         }
     }),
     router = new Router(),
@@ -113,12 +120,31 @@ var Router = Backbone.Router.extend({
 
             return false;
         },
-        render: function() {
-            var tmpl = _.template(
-                    $('#user_form_template').html()
+        render: function(opts) {
+            var tmpl, user,
+                $el = this.$el;
+
+            if(opts.hasOwnProperty('id') && opts.id) {
+                user = new User({id: opts.id});
+                user.fetch({
+                    success: function(user) {
+                        tmpl = _.template(
+                            $('#user_form_template').html(),
+                            {user: user}
+                        );
+
+                        $el.html(tmpl);
+                    }
+                });
+            }
+            else {
+                tmpl = _.template(
+                    $('#user_form_template').html(),
+                    {user: null}
                 );
 
-            this.$el.html(tmpl);
+                $el.html(tmpl);
+            }
         }
     }),
     user_form = new EditUser(),
@@ -135,8 +161,8 @@ var Router = Backbone.Router.extend({
         user_list.render();
     });
 
-    router.on('route:edit_user', function() {
-        user_form.render();
+    router.on('route:edit_user', function(id) {
+        user_form.render({id: id});
     });
 
     $.ajaxPrefilter(function(opts, original_opts, xhr) {
